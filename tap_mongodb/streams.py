@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Any, Dict, Iterable, Optional
 import time
+import json
 from bson import ObjectId
 from datetime import datetime
 from pymongo.collection import Collection
@@ -230,10 +231,11 @@ class MongoDBStream(Stream):
             return str(value)
         elif isinstance(value, datetime):
             return value.isoformat()
+        elif isinstance(value, list):
+            # Serialize arrays as JSON strings for ClickHouse compatibility
+            return json.dumps([self._convert_value(item) for item in value])
         elif isinstance(value, dict):
             return {k: self._convert_value(v) for k, v in value.items()}
-        elif isinstance(value, list):
-            return [self._convert_value(item) for item in value]
         elif hasattr(value, "__str__") and type(value).__module__ == "bson":
             # Handle other BSON types (Decimal128, Binary, etc.)
             return str(value)
