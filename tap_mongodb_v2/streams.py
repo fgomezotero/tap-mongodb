@@ -132,8 +132,7 @@ class MongoDBStream(Stream):
             return {k: self._convert_value(v) for k, v in value.items()}
         elif isinstance(value, list):
             return [self._convert_value(item) for item in value]
-        elif self._strategy == "flexible" and value is not None:
-            return str(value)
+        # Don't convert to string in flexible mode - keep original types
         return value
     
     def get_records(self, context: Optional[dict]) -> Iterable[dict]:
