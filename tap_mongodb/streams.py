@@ -232,8 +232,7 @@ class MongoDBStream(Stream):
         elif isinstance(value, datetime):
             return value.isoformat()
         elif isinstance(value, list):
-            # Serialize arrays as JSON strings for ClickHouse compatibility
-            return json.dumps([self._convert_value(item) for item in value])
+            return [self._convert_value(item) for item in value]
         elif isinstance(value, dict):
             return {k: self._convert_value(v) for k, v in value.items()}
         elif hasattr(value, "__str__") and type(value).__module__ == "bson":
