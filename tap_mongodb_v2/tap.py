@@ -23,6 +23,8 @@ class TapMongoDB(Tap):
         th.Property("infer_schema_max_docs", th.IntegerType, default=1000),
         th.Property("replication_method", th.StringType, default="FULL_TABLE"),
         th.Property("replication_key", th.StringType, default="_id"),
+        th.Property("start_date", th.DateTimeType),
+        th.Property("filter_field", th.StringType),
     ).to_dict()
     
     def discover_streams(self) -> List[MongoDBStream]:

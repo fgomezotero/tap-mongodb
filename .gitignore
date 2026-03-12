@@ -29,3 +29,7 @@ ENV/
 *.swp
 *.swo
 *~
+
+# Configuration files with credentials
+config.json
+config-incremental.json

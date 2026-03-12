@@ -141,8 +141,22 @@ class MongoDBStream(Stream):
         bookmark = self.get_starting_replication_key_value(context)
         
         query = {}
+        
+        # Apply start_date filter if configured
+        start_date = self.tap.config.get("start_date")
+        filter_field = self.tap.config.get("filter_field")
+        
+        if start_date and filter_field:
+            from dateutil import parser
+            start_dt = parser.parse(start_date) if isinstance(start_date, str) else start_date
+            query[filter_field] = {"$gte": start_dt}
+        
+        # Apply incremental replication filter
         if bookmark and self.replication_key:
-            query = {self.replication_key: {"$gt": bookmark}}
+            if self.replication_key in query:
+                query[self.replication_key]["$gt"] = bookmark
+            else:
+                query[self.replication_key] = {"$gt": bookmark}
         
         for record in self._collection.find(query):
             converted_record = {}
