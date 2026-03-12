@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "tap-mongodb-v2"
-version = "1.0.0"
-description = "Singer tap for MongoDB with flexible schema inference"
+name = "tap-mongodb"
+version = "2.0.0"
+description = "Singer tap for MongoDB with flexible schema inference and per-stream configuration"
 authors = ["Franklin Gomez <fgomezotero@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
@@ -11,13 +11,18 @@ python = ">=3.10,<4.0"
 singer-sdk = "^0.53.5"
 pymongo = {extras = ["srv"], version = "^4.10.0"}
 python-dateutil = "^2.8.2"
+tenacity = "^8.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+mongomock = "^4.1.2"
+freezer = "^1.2.2"
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-tap-mongodb-v2 = "tap_mongodb_v2.tap:TapMongoDB.cli"
+tap-mongodb = "tap_mongodb.tap:TapMongoDB.cli"
