@@ -33,3 +33,8 @@ ENV/
 # Configuration files with credentials
 config.json
 config-incremental.json
+config*.json
+
+# State files
+state.json
+state*.json

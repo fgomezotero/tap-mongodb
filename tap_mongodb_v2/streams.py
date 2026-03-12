@@ -143,13 +143,27 @@ class MongoDBStream(Stream):
         query = {}
         
         # Apply start_date filter if configured
-        start_date = self.tap.config.get("start_date")
-        filter_field = self.tap.config.get("filter_field")
+        start_date = self._tap.config.get("start_date")
+        filter_field = self._tap.config.get("filter_field")
         
         if start_date and filter_field:
             from dateutil import parser
             start_dt = parser.parse(start_date) if isinstance(start_date, str) else start_date
-            query[filter_field] = {"$gte": start_dt}
+            
+            # Check field type in a sample document
+            sample = self._collection.find_one({filter_field: {"$exists": True}})
+            if sample and filter_field in sample:
+                field_value = sample[filter_field]
+                
+                # Only apply filter if field is datetime type in MongoDB
+                if isinstance(field_value, datetime):
+                    query[filter_field] = {"$gte": start_dt}
+                    self.logger.info(f"Applying date filter on {filter_field} >= {start_dt}")
+                else:
+                    self.logger.warning(
+                        f"Field '{filter_field}' is not datetime type in MongoDB (found {type(field_value).__name__}). "
+                        f"Date filter will be ignored. Convert field to datetime in MongoDB to use date filtering."
+                    )
         
         # Apply incremental replication filter
         if bookmark and self.replication_key:

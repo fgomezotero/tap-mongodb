@@ -29,7 +29,7 @@ class TapMongoDB(Tap):
     
     def discover_streams(self) -> List[MongoDBStream]:
         """Return a list of discovered streams."""
-        from pymongo import MongoClient
+        from pymongo import MongoClient, ReadPreference
         
         # Don't close client - streams need it
         if not hasattr(self, '_client'):
@@ -39,6 +39,7 @@ class TapMongoDB(Tap):
                 username=self.config.get("username"),
                 password=self.config.get("password"),
                 authSource=self.config.get("auth_source", "admin"),
+                readPreference="secondaryPreferred",
             )
         
         db = self._client[self.config["database"]]
