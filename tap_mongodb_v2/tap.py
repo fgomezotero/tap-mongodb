@@ -40,7 +40,13 @@ class TapMongoDB(Tap):
             )
         
         db = self._client[self.config["database"]]
-        collections = self.config.get("collections") or db.list_collection_names()
+        
+        # Get collections from config or discover all
+        config_collections = self.config.get("collections")
+        if config_collections:
+            collections = config_collections
+        else:
+            collections = db.list_collection_names()
         
         streams = []
         for collection_name in collections:
