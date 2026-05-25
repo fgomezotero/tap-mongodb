@@ -216,7 +216,10 @@ Configure different settings for each collection:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `batch_size` | integer | 1000 | Number of documents to fetch per batch |
+| `max_record_per_run` | integer | - | Maximum number of documents emitted per stream in a single run |
 | `validate_replication_keys` | boolean | true | Validate that replication keys exist and are indexed |
+
+`batch_size` controls how many documents MongoDB fetches from the server at a time. `max_record_per_run` caps how many documents the tap emits for each stream during a run, so you can throttle extraction volume without changing MongoDB cursor batching.
 
 ## Schema Strategies
 
@@ -337,6 +340,26 @@ meltano run tap-mongodb target-clickhouse
 }
 ```
 
+### Example 5: Limit Records Emitted Per Run
+
+```json
+{
+  "connection_string": "mongodb://localhost:27017",
+  "database": "mydb",
+  "collections": ["orders"],
+  "batch_size": 500,
+  "max_record_per_run": 1000,
+  "stream_configs": {
+    "orders": {
+      "replication_method": "INCREMENTAL",
+      "replication_key": "updated_at"
+    }
+  }
+}
+```
+
+In this example, MongoDB still fetches up to 500 documents per cursor batch, but the tap stops after emitting 1,000 records for the `orders` stream in that run.
+
 ## Replication Key Validation
 
 When `validate_replication_keys` is enabled (default), the tap will:
@@ -395,6 +418,7 @@ If extraction uses too much memory:
 ```json
 {
   "batch_size": 500,
+  "max_record_per_run": 10000,
   "infer_schema_max_docs": 100
 }
 ```

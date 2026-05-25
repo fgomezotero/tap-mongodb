@@ -154,6 +154,11 @@ class TapMongoDB(Tap):
             description="Number of documents to fetch per batch",
         ),
         th.Property(
+            "max_record_per_run",
+            th.IntegerType,
+            description="Maximum number of documents to emit per stream run",
+        ),
+        th.Property(
             "validate_replication_keys",
             th.BooleanType,
             default=True,
@@ -327,6 +332,7 @@ class TapMongoDB(Tap):
                 "filter_field": stream_config.get("filter_field"),
                 "filters": stream_config.get("filters", {}),
                 "projection": stream_config.get("projection"),
+                "max_record_per_run": self.config.get("max_record_per_run"),
             }
             
             stream = MongoDBStream(
