@@ -224,6 +224,23 @@ class TestMongoDBStream:
             
             assert len(records) == 2
             assert records[0]["name"] == "test1"
+
+    def test_get_records_respects_max_record_per_run(self, mock_tap, mock_collection):
+        """Test record extraction stops at max_record_per_run."""
+        mock_tap.config["max_record_per_run"] = 1
+        mock_collection.find.return_value.batch_size.return_value = [
+            {"_id": ObjectId("507f1f77bcf86cd799439011"), "name": "test1"},
+            {"_id": ObjectId("507f1f77bcf86cd799439012"), "name": "test2"},
+        ]
+
+        stream = MongoDBStream(mock_tap, "test", mock_collection, {})
+
+        with patch.object(stream, 'get_starting_replication_key_value', return_value=None):
+            records = list(stream.get_records(None))
+
+            assert len(records) == 1
+            assert records[0]["name"] == "test1"
+            assert stream._metrics["records_extracted"] == 1
     
     def test_retry_on_network_error(self, mock_tap, mock_collection):
         """Test retry logic on network errors."""

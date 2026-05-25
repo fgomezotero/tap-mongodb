@@ -52,6 +52,10 @@ class MongoDBStream(Stream):
         
         # Performance settings
         self._batch_size = tap.config.get("batch_size", 1000)
+        self._max_record_per_run = self._stream_config.get(
+            "max_record_per_run",
+            tap.config.get("max_record_per_run"),
+        )
         
         # Retry settings
         self._max_retries = tap.config.get("max_retries", 3)
@@ -368,6 +372,15 @@ class MongoDBStream(Stream):
         last_log_time = start_time
         
         for record in cursor:
+            if (
+                self._max_record_per_run is not None
+                and record_count >= self._max_record_per_run
+            ):
+                self.logger.info(
+                    f"Reached max_record_per_run={self._max_record_per_run} for stream {self.name}"
+                )
+                break
+
             converted_record = {}
             for key, value in record.items():
                 converted_record[key] = self._convert_value(value)
