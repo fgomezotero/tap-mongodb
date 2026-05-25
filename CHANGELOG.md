@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 - Added a LICENSE file with Apache License 2.0 text.
 - Added this CHANGELOG file to track future releases.
+- Added `max_record_per_run` stream configuration to cap per-stream extraction volume.
 
 ## [2.0.0] - 2026-03-31
 
