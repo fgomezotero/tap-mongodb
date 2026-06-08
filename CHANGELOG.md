@@ -6,6 +6,17 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-06-08
+
+### Fixed
+
+- Fixed `InvalidRecord` error when a field contains both `dict` and `list` values across documents.
+- `_flexible_schema` now forces `dict` and `list` fields to `string` type to avoid schema/data mismatches.
+- `_convert_value` serializes `list` and `dict` values as JSON strings with proper BSON type handling.
+- `_python_to_json_type` maps `dict` and `list` to `string` for consistent schema generation.
+
+## [2.1.0]
+
 ### Added
 
 - Added a LICENSE file with Apache License 2.0 text.

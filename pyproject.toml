@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tap-mongodb"
-version = "2.1.0"
+version = "2.1.1"
 description = "Singer tap for MongoDB with flexible schema inference and per-stream configuration"
 authors = ["Franklin Gomez <fgomezotero@gmail.com>"]
 license = "Apache-2.0"
