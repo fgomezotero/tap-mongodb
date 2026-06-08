@@ -67,6 +67,29 @@ class TestTypeConversion:
         
         assert result == "2024-01-15T10:30:45.123456"
         assert isinstance(result, str)
+
+    def test_json_default_objectid(self, stream):
+        """Test JSON default conversion for ObjectId."""
+        oid = ObjectId("507f1f77bcf86cd799439011")
+        assert stream._json_default(oid) == "507f1f77bcf86cd799439011"
+
+    def test_json_default_datetime(self, stream):
+        """Test JSON default conversion for datetime."""
+        dt = datetime(2024, 1, 15, 10, 30, 45)
+        assert stream._json_default(dt) == "2024-01-15T10:30:45"
+
+    def test_json_default_bson_type(self, stream):
+        """Test JSON default conversion for BSON types."""
+        value = Decimal128("10.5")
+        assert stream._json_default(value) == "10.5"
+
+    def test_json_default_unsupported_type(self, stream):
+        """Test unsupported JSON default conversion raises TypeError."""
+        class Unsupported:
+            pass
+
+        with pytest.raises(TypeError, match="not JSON serializable"):
+            stream._json_default(Unsupported())
     
     def test_convert_simple_dict(self, stream):
         """Test simple dictionary conversion."""
