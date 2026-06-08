@@ -1,4 +1,5 @@
 """Tests for type conversion."""
+import json
 import pytest
 from unittest.mock import Mock, MagicMock
 from datetime import datetime
@@ -76,8 +77,8 @@ class TestTypeConversion:
         }
         result = stream._convert_value(data)
         
-        assert result == data
-        assert isinstance(result, dict)
+        assert isinstance(result, str)
+        assert json.loads(result) == data
     
     def test_convert_nested_dict_with_objectid(self, stream):
         """Test nested dictionary with ObjectId."""
@@ -89,8 +90,9 @@ class TestTypeConversion:
         }
         result = stream._convert_value(data)
         
-        assert result["user"]["_id"] == "507f1f77bcf86cd799439011"
-        assert result["user"]["name"] == "John"
+        parsed = json.loads(result)
+        assert parsed["user"]["_id"] == "507f1f77bcf86cd799439011"
+        assert parsed["user"]["name"] == "John"
     
     def test_convert_nested_dict_with_datetime(self, stream):
         """Test nested dictionary with datetime."""
@@ -102,15 +104,17 @@ class TestTypeConversion:
         }
         result = stream._convert_value(data)
         
-        assert result["event"]["timestamp"] == "2024-01-01T12:00:00"
-        assert result["event"]["type"] == "login"
+        parsed = json.loads(result)
+        assert parsed["event"]["timestamp"] == "2024-01-01T12:00:00"
+        assert parsed["event"]["type"] == "login"
     
     def test_convert_list_of_primitives(self, stream):
         """Test list of primitive values."""
         data = [1, 2, 3, "four", 5.0, True]
         result = stream._convert_value(data)
         
-        assert result == data
+        assert isinstance(result, str)
+        assert json.loads(result) == data
     
     def test_convert_list_of_objectids(self, stream):
         """Test list of ObjectIds."""
@@ -120,8 +124,9 @@ class TestTypeConversion:
         ]
         result = stream._convert_value(data)
         
-        assert result[0] == "507f1f77bcf86cd799439011"
-        assert result[1] == "507f1f77bcf86cd799439012"
+        parsed = json.loads(result)
+        assert parsed[0] == "507f1f77bcf86cd799439011"
+        assert parsed[1] == "507f1f77bcf86cd799439012"
     
     def test_convert_list_of_dicts(self, stream):
         """Test list of dictionaries."""
@@ -131,8 +136,9 @@ class TestTypeConversion:
         ]
         result = stream._convert_value(data)
         
-        assert result[0]["_id"] == "507f1f77bcf86cd799439011"
-        assert result[1]["_id"] == "507f1f77bcf86cd799439012"
+        parsed = json.loads(result)
+        assert parsed[0]["_id"] == "507f1f77bcf86cd799439011"
+        assert parsed[1]["_id"] == "507f1f77bcf86cd799439012"
     
     def test_convert_deeply_nested_structure(self, stream):
         """Test deeply nested structure."""
@@ -152,7 +158,8 @@ class TestTypeConversion:
         }
         result = stream._convert_value(data)
         
-        level3 = result["level1"]["level2"]["level3"]
+        parsed = json.loads(result)
+        level3 = parsed["level1"]["level2"]["level3"]
         assert level3["_id"] == "507f1f77bcf86cd799439011"
         assert level3["timestamp"] == "2024-01-01T00:00:00"
         assert level3["items"][0]["id"] == "507f1f77bcf86cd799439012"
@@ -165,12 +172,12 @@ class TestTypeConversion:
     def test_convert_empty_dict(self, stream):
         """Test empty dictionary."""
         result = stream._convert_value({})
-        assert result == {}
+        assert result == "{}"
     
     def test_convert_empty_list(self, stream):
         """Test empty list."""
         result = stream._convert_value([])
-        assert result == []
+        assert result == "[]"
     
     def test_convert_mixed_types_in_dict(self, stream):
         """Test dictionary with mixed types."""
@@ -187,15 +194,16 @@ class TestTypeConversion:
         }
         result = stream._convert_value(data)
         
-        assert result["_id"] == "507f1f77bcf86cd799439011"
-        assert result["name"] == "John"
-        assert result["age"] == 30
-        assert result["balance"] == 1000.50
-        assert result["active"] is True
-        assert result["created_at"] == "2024-01-01T00:00:00"
-        assert result["tags"] == ["tag1", "tag2"]
-        assert result["metadata"] == {"key": "value"}
-        assert result["nullable"] is None
+        parsed = json.loads(result)
+        assert parsed["_id"] == "507f1f77bcf86cd799439011"
+        assert parsed["name"] == "John"
+        assert parsed["age"] == 30
+        assert parsed["balance"] == 1000.50
+        assert parsed["active"] is True
+        assert parsed["created_at"] == "2024-01-01T00:00:00"
+        assert parsed["tags"] == ["tag1", "tag2"]
+        assert parsed["metadata"] == {"key": "value"}
+        assert parsed["nullable"] is None
     
     def test_convert_complete_document(self, stream):
         """Test conversion of a complete MongoDB document."""
@@ -230,21 +238,22 @@ class TestTypeConversion:
         
         result = stream._convert_value(doc)
         
+        parsed = json.loads(result)
         # Verify top level
-        assert result["_id"] == "507f1f77bcf86cd799439011"
+        assert parsed["_id"] == "507f1f77bcf86cd799439011"
         
         # Verify nested user
-        assert result["user"]["name"] == "John Doe"
-        assert result["user"]["profile"]["avatar_id"] == "507f1f77bcf86cd799439012"
-        assert result["user"]["profile"]["created_at"] == "2024-01-01T10:00:00"
+        assert parsed["user"]["name"] == "John Doe"
+        assert parsed["user"]["profile"]["avatar_id"] == "507f1f77bcf86cd799439012"
+        assert parsed["user"]["profile"]["created_at"] == "2024-01-01T10:00:00"
         
         # Verify orders array
-        assert len(result["orders"]) == 2
-        assert result["orders"][0]["order_id"] == "507f1f77bcf86cd799439013"
-        assert result["orders"][0]["date"] == "2024-01-15T00:00:00"
-        assert result["orders"][1]["order_id"] == "507f1f77bcf86cd799439014"
+        assert len(parsed["orders"]) == 2
+        assert parsed["orders"][0]["order_id"] == "507f1f77bcf86cd799439013"
+        assert parsed["orders"][0]["date"] == "2024-01-15T00:00:00"
+        assert parsed["orders"][1]["order_id"] == "507f1f77bcf86cd799439014"
         
         # Verify metadata
-        assert result["metadata"]["created_at"] == "2024-01-01T00:00:00"
-        assert result["metadata"]["updated_at"] == "2024-01-20T00:00:00"
-        assert result["metadata"]["version"] == 1
+        assert parsed["metadata"]["created_at"] == "2024-01-01T00:00:00"
+        assert parsed["metadata"]["updated_at"] == "2024-01-20T00:00:00"
+        assert parsed["metadata"]["version"] == 1

@@ -165,6 +165,8 @@ class MongoDBStream(Stream):
         for field, types in field_types.items():
             if field == "_id":
                 properties[field] = {"type": ["string", "null"]}
+            elif types & {"dict", "list"}:
+                properties[field] = {"type": ["string", "null"]}
             elif len(types) > 1:
                 # Multiple types found - use string for flexibility
                 properties[field] = {"type": ["string", "null"]}
@@ -217,8 +219,8 @@ class MongoDBStream(Stream):
             "int": "integer",
             "float": "number",
             "bool": "boolean",
-            "dict": "object",
-            "list": "array",
+            "dict": "string",
+            "list": "string",
             "NoneType": "null",
             "ObjectId": "string",
             "datetime": "string",
@@ -229,6 +231,16 @@ class MongoDBStream(Stream):
         }
         return mapping.get(python_type, "string")
     
+    def _json_default(self, value: Any) -> str:
+        """Return a JSON-serializable representation for MongoDB values."""
+        if isinstance(value, ObjectId):
+            return str(value)
+        elif isinstance(value, datetime):
+            return value.isoformat()
+        elif hasattr(value, "__str__") and type(value).__module__ == "bson":
+            return str(value)
+        raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+    
     def _convert_value(self, value: Any) -> Any:
         """Convert MongoDB types to JSON-serializable types."""
         if isinstance(value, ObjectId):
@@ -236,9 +248,9 @@ class MongoDBStream(Stream):
         elif isinstance(value, datetime):
             return value.isoformat()
         elif isinstance(value, list):
-            return [self._convert_value(item) for item in value]
+            return json.dumps(value, default=self._json_default)
         elif isinstance(value, dict):
-            return {k: self._convert_value(v) for k, v in value.items()}
+            return json.dumps(value, default=self._json_default)
         elif hasattr(value, "__str__") and type(value).__module__ == "bson":
             # Handle other BSON types (Decimal128, Binary, etc.)
             return str(value)
