@@ -1,4 +1,5 @@
 import pytest
+import json
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 from bson import ObjectId
@@ -95,8 +96,9 @@ class TestMongoDBStream:
         
         result = stream._convert_value(data)
         
-        assert result["_id"] == "507f1f77bcf86cd799439011"
-        assert result["nested"]["date"] == "2024-01-01T00:00:00"
+        parsed = json.loads(result)
+        assert parsed["_id"] == "507f1f77bcf86cd799439011"
+        assert parsed["nested"]["date"] == "2024-01-01T00:00:00"
     
     def test_convert_value_list(self, mock_tap, mock_collection):
         """Test list conversion."""
@@ -110,9 +112,10 @@ class TestMongoDBStream:
         
         result = stream._convert_value(data)
         
-        assert result[0] == "507f1f77bcf86cd799439011"
-        assert result[1] == "2024-01-01T00:00:00"
-        assert result[2] == "string"
+        parsed = json.loads(result)
+        assert parsed[0] == "507f1f77bcf86cd799439011"
+        assert parsed[1] == "2024-01-01T00:00:00"
+        assert parsed[2] == "string"
     
     def test_python_to_json_type(self, mock_tap, mock_collection):
         """Test Python to JSON type mapping."""
@@ -122,6 +125,8 @@ class TestMongoDBStream:
         assert stream._python_to_json_type("int") == "integer"
         assert stream._python_to_json_type("float") == "number"
         assert stream._python_to_json_type("bool") == "boolean"
+        assert stream._python_to_json_type("dict") == "string"
+        assert stream._python_to_json_type("list") == "string"
         assert stream._python_to_json_type("ObjectId") == "string"
         assert stream._python_to_json_type("datetime") == "string"
         assert stream._python_to_json_type("unknown") == "string"
@@ -150,6 +155,22 @@ class TestMongoDBStream:
         assert schema["type"] == "object"
         assert "properties" in schema
         assert "_id" in schema["properties"]
+
+    def test_flexible_schema_serializes_complex_types_as_strings(self, mock_tap, mock_collection):
+        """Test flexible schema treats dict and list fields as strings."""
+        mock_collection.find.return_value.limit.return_value = [
+            {
+                "_id": ObjectId(),
+                "profile": {"role": "SOLICITANTE"},
+                "participants": [{"oid": "#####", "role": "SOLICITANTE"}],
+            }
+        ]
+
+        stream = MongoDBStream(mock_tap, "test", mock_collection, {})
+        schema = stream.schema
+
+        assert schema["properties"]["profile"]["type"] == ["string", "null"]
+        assert schema["properties"]["participants"]["type"] == ["string", "null"]
     
     def test_build_query_no_filters(self, mock_tap, mock_collection):
         """Test query building without filters."""
