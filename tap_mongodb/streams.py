@@ -237,7 +237,7 @@ class MongoDBStream(Stream):
             return str(value)
         elif isinstance(value, datetime):
             return value.isoformat()
-        elif hasattr(value, "__str__") and type(value).__module__ == "bson":
+        elif hasattr(value, "__str__") and type(value).__module__.startswith("bson"):
             return str(value)
         raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
     
@@ -251,7 +251,7 @@ class MongoDBStream(Stream):
             return json.dumps(value, default=self._json_default)
         elif isinstance(value, dict):
             return json.dumps(value, default=self._json_default)
-        elif hasattr(value, "__str__") and type(value).__module__ == "bson":
+        elif hasattr(value, "__str__") and type(value).__module__.startswith("bson"):
             # Handle other BSON types (Decimal128, Binary, etc.)
             return str(value)
         return value
