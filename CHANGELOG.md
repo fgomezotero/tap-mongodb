@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-06-09
+
+### Fixed
+
+- Schema inference now applies stream filters during sampling, ensuring all fields present in the filtered dataset are discovered and declared in the schema.
+
 ## [2.1.1] - 2026-06-08
 
 ### Fixed

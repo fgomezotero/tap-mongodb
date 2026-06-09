@@ -141,10 +141,10 @@ class MongoDBStream(Stream):
     def _flexible_schema(self) -> dict:
         """Infer schema but use string for conflicting types."""
         try:
-            # Apply projection if configured
             projection = self._stream_config.get("projection")
+            query = self._stream_config.get("filters", {})
             sample_docs = list(
-                self._collection.find({}, projection).limit(self._infer_max_docs)
+                self._collection.find(query, projection).limit(self._infer_max_docs)
             )
         except Exception as e:
             self.logger.warning(f"Failed to sample documents: {e}")
