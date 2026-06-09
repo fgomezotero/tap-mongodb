@@ -142,7 +142,7 @@ class MongoDBStream(Stream):
         """Infer schema but use string for conflicting types."""
         try:
             projection = self._stream_config.get("projection")
-            query = self._stream_config.get("filters", {})
+            query = self._resolve_date_expressions(self._stream_config.get("filters", {}))
             sample_docs = list(
                 self._collection.find(query, projection).limit(self._infer_max_docs)
             )
@@ -256,6 +256,18 @@ class MongoDBStream(Stream):
             return str(value)
         return value
     
+    def _resolve_date_expressions(self, obj: Any) -> Any:
+        """Recursively resolve $dateFromString expressions to native datetime."""
+        if isinstance(obj, dict):
+            if "$dateFromString" in obj:
+                date_string = obj["$dateFromString"].get("dateString", "")
+                from dateutil import parser
+                return parser.parse(date_string)
+            return {k: self._resolve_date_expressions(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._resolve_date_expressions(item) for item in obj]
+        return obj
+
     def _build_query(self, bookmark: Any) -> dict:
         """Build MongoDB query with filters and replication key."""
         query = {}
@@ -263,6 +275,8 @@ class MongoDBStream(Stream):
         # Apply custom filters from stream config
         custom_filters = self._stream_config.get("filters", {})
         if custom_filters:
+            # Resolve $dateFromString to native datetime for index usage
+            custom_filters = self._resolve_date_expressions(custom_filters)
             query.update(custom_filters)
             self.logger.info(f"Applying custom filters: {custom_filters}")
         
@@ -298,15 +312,21 @@ class MongoDBStream(Stream):
         
         # Apply incremental replication filter
         if bookmark and self.replication_key:
+            # Convert string bookmark back to ObjectId if replication_key is _id
+            bookmark_value = bookmark
+            if self.replication_key == "_id" and isinstance(bookmark, str):
+                try:
+                    bookmark_value = ObjectId(bookmark)
+                except Exception:
+                    pass
             if self.replication_key in query:
-                # Merge with existing filter
                 if isinstance(query[self.replication_key], dict):
-                    query[self.replication_key]["$gt"] = bookmark
+                    query[self.replication_key]["$gt"] = bookmark_value
                 else:
-                    query[self.replication_key] = {"$gt": bookmark}
+                    query[self.replication_key] = {"$gt": bookmark_value}
             else:
-                query[self.replication_key] = {"$gt": bookmark}
-            self.logger.info(f"Applying incremental filter: {self.replication_key} > {bookmark}")
+                query[self.replication_key] = {"$gt": bookmark_value}
+            self.logger.info(f"Applying incremental filter: {self.replication_key} > {bookmark_value}")
         
         return query
     
