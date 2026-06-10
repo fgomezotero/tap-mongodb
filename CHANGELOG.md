@@ -13,6 +13,8 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 - Schema sampling now uses `_id` descending index (`find().sort("_id", -1).limit(N)`) instead of applying stream filters, eliminating collection scans on unindexed fields.
 - Default `infer_schema_max_docs` reduced from 1000 to 100.
 - Schema is now cached after first inference, preventing redundant queries during discovery and sync phases.
+- `flexible` strategy now declares all discovered fields as `string` type for maximum compatibility with MongoDB's dynamic typing across documents.
+- `_convert_value` now stringifies primitive types (`int`, `float`, `bool`) when using `flexible` strategy to prevent schema validation errors.
 
 ## [2.1.2] - 2026-06-09
 
