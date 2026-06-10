@@ -89,8 +89,8 @@ class TapMongoDB(Tap):
         th.Property(
             "infer_schema_max_docs",
             th.IntegerType,
-            default=1000,
-            description="Maximum documents to sample for schema inference",
+            default=100,
+            description="Maximum documents to sample for schema inference (uses _id index)",
         ),
         
         # Replication settings (global defaults)

@@ -35,10 +35,11 @@ class MongoDBStream(Stream):
         super().__init__(tap, name=name, schema=None)
         self._collection = collection
         self._stream_config = stream_config or {}
+        self._cached_schema: Optional[dict] = None
         
         # Schema inference settings
         self._strategy = tap.config.get("strategy", "flexible")
-        self._infer_max_docs = tap.config.get("infer_schema_max_docs", 1000)
+        self._infer_max_docs = tap.config.get("infer_schema_max_docs", 100)
         
         # Replication settings
         replication_method = self._stream_config.get("replication_method", "FULL_TABLE")
@@ -120,13 +121,19 @@ class MongoDBStream(Stream):
     
     @property
     def schema(self) -> dict:
-        """Return schema for stream."""
+        """Return schema for stream (cached after first inference)."""
+        if self._cached_schema is not None:
+            return self._cached_schema
+        
         if self._strategy == "raw":
-            return self._raw_schema()
+            result = self._raw_schema()
         elif self._strategy == "flexible":
-            return self._flexible_schema()
+            result = self._flexible_schema()
         else:
-            return self._strict_schema()
+            result = self._strict_schema()
+        
+        self._cached_schema = result
+        return result
     
     def _raw_schema(self) -> dict:
         """Return minimal schema - all fields as strings."""
@@ -139,12 +146,17 @@ class MongoDBStream(Stream):
         }
     
     def _flexible_schema(self) -> dict:
-        """Infer schema but use string for conflicting types."""
+        """Infer schema by sampling recent documents using _id index."""
         try:
             projection = self._stream_config.get("projection")
-            query = self._resolve_date_expressions(self._stream_config.get("filters", {}))
+            # Sample using _id descending to leverage the native index
             sample_docs = list(
-                self._collection.find(query, projection).limit(self._infer_max_docs)
+                self._collection.find({}, projection)
+                .sort("_id", -1)
+                .limit(self._infer_max_docs)
+            )
+            self.logger.info(
+                f"Schema sampling: {len(sample_docs)} docs via _id index"
             )
         except Exception as e:
             self.logger.warning(f"Failed to sample documents: {e}")

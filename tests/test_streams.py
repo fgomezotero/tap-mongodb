@@ -144,7 +144,7 @@ class TestMongoDBStream:
     
     def test_flexible_schema(self, mock_tap, mock_collection):
         """Test flexible schema generation."""
-        mock_collection.find.return_value.limit.return_value = [
+        mock_collection.find.return_value.sort.return_value.limit.return_value = [
             {"_id": ObjectId(), "name": "test", "count": 1},
             {"_id": ObjectId(), "name": "test2", "count": 2},
         ]
@@ -158,7 +158,7 @@ class TestMongoDBStream:
 
     def test_flexible_schema_serializes_complex_types_as_strings(self, mock_tap, mock_collection):
         """Test flexible schema treats dict and list fields as strings."""
-        mock_collection.find.return_value.limit.return_value = [
+        mock_collection.find.return_value.sort.return_value.limit.return_value = [
             {
                 "_id": ObjectId(),
                 "profile": {"role": "SOLICITANTE"},

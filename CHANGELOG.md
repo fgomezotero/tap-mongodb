@@ -6,6 +6,14 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-10
+
+### Changed
+
+- Schema sampling now uses `_id` descending index (`find().sort("_id", -1).limit(N)`) instead of applying stream filters, eliminating collection scans on unindexed fields.
+- Default `infer_schema_max_docs` reduced from 1000 to 100.
+- Schema is now cached after first inference, preventing redundant queries during discovery and sync phases.
+
 ## [2.1.2] - 2026-06-09
 
 ### Fixed
