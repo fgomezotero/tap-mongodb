@@ -146,7 +146,11 @@ class MongoDBStream(Stream):
         }
     
     def _flexible_schema(self) -> dict:
-        """Infer schema by sampling recent documents using _id index."""
+        """Infer schema by sampling recent documents using _id index.
+        
+        All fields are declared as string for maximum compatibility with
+        MongoDB's dynamic typing across documents.
+        """
         try:
             projection = self._stream_config.get("projection")
             # Sample using _id descending to leverage the native index
@@ -165,29 +169,13 @@ class MongoDBStream(Stream):
         if not sample_docs:
             return self._raw_schema()
         
-        field_types = {}
+        # Discover all field names from sampled documents
+        all_fields = set()
         for doc in sample_docs:
-            for key, value in doc.items():
-                if key not in field_types:
-                    field_types[key] = set()
-                if value is not None:
-                    field_types[key].add(type(value).__name__)
+            all_fields.update(doc.keys())
         
-        properties = {}
-        for field, types in field_types.items():
-            if field == "_id":
-                properties[field] = {"type": ["string", "null"]}
-            elif types & {"dict", "list"}:
-                properties[field] = {"type": ["string", "null"]}
-            elif len(types) > 1:
-                # Multiple types found - use string for flexibility
-                properties[field] = {"type": ["string", "null"]}
-            elif len(types) == 0:
-                properties[field] = {"type": ["string", "null"]}
-            else:
-                type_name = list(types)[0]
-                json_type = self._python_to_json_type(type_name)
-                properties[field] = {"type": [json_type, "null"]}
+        # All fields as string for flexible compatibility
+        properties = {field: {"type": ["string", "null"]} for field in all_fields}
         
         return {
             "type": "object",
@@ -254,7 +242,9 @@ class MongoDBStream(Stream):
         raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
     
     def _convert_value(self, value: Any) -> Any:
-        """Convert MongoDB types to JSON-serializable types."""
+        """Convert MongoDB types to JSON-serializable strings for flexible compatibility."""
+        if value is None:
+            return None
         if isinstance(value, ObjectId):
             return str(value)
         elif isinstance(value, datetime):
@@ -263,8 +253,9 @@ class MongoDBStream(Stream):
             return json.dumps(value, default=self._json_default)
         elif isinstance(value, dict):
             return json.dumps(value, default=self._json_default)
+        elif isinstance(value, (int, float, bool)):
+            return value if self._strategy != "flexible" else str(value)
         elif hasattr(value, "__str__") and type(value).__module__.startswith("bson"):
-            # Handle other BSON types (Decimal128, Binary, etc.)
             return str(value)
         return value
     
